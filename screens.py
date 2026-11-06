@@ -131,10 +131,6 @@ def _student_id_from_input(raw_student_id):
     student_id = int(raw_student_id)
     if len(raw_student_id) == 5:
         return student_id if 10000 <= student_id <= 99999 else None
-    if str(student_id) == raw_student_id:
-        student = _get_student_by_id(student_id)
-        if student is not None:
-            return student_id
     return None
 
 
@@ -205,7 +201,7 @@ def modify_student_info():
 
         # Ask whether to modify another mark for the same student or return to the main menu.
         while True:
-            another = input("Would you like to modify another attribute for this student? (Y/N): ").strip().upper()
+            another = input("Would you like to modify another mark for this student? (Y/N): ").strip().upper()
             if another in ['Y', 'N']:
                 break
             print("Invalid choice. Please try again.")
