@@ -1,181 +1,117 @@
-# SLMS -- Student Learning Management System
+# SLMS — Student Learning Management System
 
-نظام بسيط لإدارة بيانات الطلاب وعلاماتهم من خلال واجهة Console باستخدام
-Python.
+SLMS is a command-line Python application for maintaining student names and scores. It stores records in a local comma-separated text file and uses Pandas to produce reports.
 
-المشروع مبني كتمرين عملي على Python وOOP وFile Handling وPandas، مع
-تقسيم الكود إلى ملفات حسب مسؤولية كل ملف.
+## Features
 
-## فكرة المشروع
+- Display developer information at startup.
+- Add students after validating that the ID is an integer and unique and the name contains letters and spaces.
+- Modify a student's Midterm, Participation, or Final score. Scores are validated against their limits: 0–30, 0–20, and 0–50, respectively. Multiple attributes can be changed for the same student without entering the ID again.
+- Delete a student after displaying the record and receiving confirmation.
+- View student and score reports, including averages.
+- Keep student records in a text file between program runs.
 
-النظام بيسمح للمستخدم إنه: - يضيف طالب جديد مع التحقق من رقم الطالب
-والاسم. - يعدّل علامة طالب موجود حسب رقم الطالب. - يعرض بيانات الطلاب
-وتقارير مختلفة. - يحسب متوسط العلامات والمجموع النهائي. - يحفظ البيانات
-في ملف نصي حتى تظل موجودة بعد إغلاق البرنامج.
+## Project Structure
 
-## متطلبات التشغيل
-
--   Python 3.10 أو أحدث، لأن المشروع يستخدم `match/case`.
--   مكتبة `pandas` لقراءة البيانات وإنشاء التقارير.
-
-تثبيت المكتبة:
-
-``` bash
-pip install pandas
+```text
+SLMS/
+├── main.py        # Startup, local data-file initialization, and main menu routing
+├── screens.py     # Console interaction, validation, student actions, and Pandas reports
+├── students.py    # Student class and text-file update/delete functions
+├── students.txt   # Local student records; created at startup if missing and ignored by Git
+├── main.ipynb     # Older Google Colab notebook; its menu flow is not current
+├── README.md      # Project documentation
+└── .gitignore     # Excludes local data and other generated/local files
 ```
 
-## تشغيل المشروع
+## Requirements
 
-تأكد إنك واقف داخل مجلد المشروع، وإن ملف `students.txt` موجود، ثم شغّل:
+- Python 3.10 or later (the code uses `match`/`case`).
+- Pandas. The project was inspected with Pandas 2.2.3 and Python 3.13.0; these are the versions in the current environment, not declared minimum versions.
 
-``` bash
+## Installation and Setup
+
+Run commands from the project directory. Create and activate a virtual environment if desired, then install Pandas:
+
+```bash
+python -m venv .venv
+```
+
+On Windows PowerShell:
+
+```powershell
+.venv\Scripts\Activate.ps1
+python -m pip install pandas
+```
+
+On macOS or Linux:
+
+```bash
+source .venv/bin/activate
+python -m pip install pandas
+```
+
+Start the current application with:
+
+```bash
 python main.py
 ```
 
-إذا بتستخدم Google Colab، افتح الـ Notebook داخل مجلد المشروع وشغّل
-الأوامر من نفس المجلد. لازم يكون مجلد العمل الحالي هو مجلد المشروع حتى
-يقدر Python يلاقي ملفات `.py` وملف `students.txt`.
+At startup, `main.py` opens `students.txt` in append mode. This creates an empty file if it does not exist and does not truncate an existing file. Run from the project directory so the application's relative `students.txt` path resolves to the project data file.
 
-## هيكل المشروع
+## Usage
 
-``` text
-SLMS/
-├── main.py
-├── screens.py
-├── students.py
-├── students.txt
-└── main.ipynb       # Notebook اختياري للتشغيل من Jupyter أو Colab
-```
+The program displays developer information, waits for a keypress, and then repeats the main menu until Exit is selected:
 
-## وظيفة الملفات
+| Choice | Action |
+| --- | --- |
+| A | Add a new student |
+| B | Modify a student's scores |
+| C | Show reports |
+| D | Delete a student |
+| E | Exit the program |
 
-  -----------------------------------------------------------------------
-  الملف                               مسؤوليته
-  ----------------------------------- -----------------------------------
-  `main.py`                           نقطة بداية البرنامج. بعرض معلومات
-                                      المطوّر والقائمة الرئيسية، وبوجّه
-                                      المستخدم للوظيفة اللي اختارها.
+### Add a Student
 
-  `screens.py`                        مسؤول عن القوائم والتفاعل مع
-                                      المستخدم والتحقق من المدخلات
-                                      والإضافة والتعديل والتقارير.
+Enter a unique integer student ID and a non-empty name containing letters and spaces. The new record is appended with all three scores set to `None`. The Add flow can be repeated for more students.
 
-  `students.py`                       يحتوي `Student` class والدالة
-                                      المسؤولة عن تحديث بيانات الطالب
-                                      داخل الملف.
+### Modify a Student
 
-  `students.txt`                      ملف التخزين الأساسي؛ كل سطر فيه سجل
-                                      طالب واحد.
+Enter the student's ID once. If it is invalid or not found, the program offers another ID attempt or a return to the main menu. For a found student, choose Midterm, Participation, or Final and enter a score within its allowed range. Invalid or out-of-range scores are rejected and prompted again. After a successful update, choose whether to edit another attribute for the same student; the same `Student` object is reused. Choosing `D` in the attribute menu returns to the main menu.
 
-  `main.ipynb`                        اختياري لتشغيل المشروع من Notebook
-                                      أو Colab.
-  -----------------------------------------------------------------------
+### Delete a Student
 
-## كيف البرنامج بشتغل؟
+Enter an integer student ID. If a matching record is found, the program displays the student details and asks for confirmation. Answer `Y` to remove that record while keeping the other records; any other response cancels the deletion. A missing ID is reported without changing the file.
 
-1.  يبدأ التنفيذ من `main.py`.
-2.  بعرض معلومات المطوّر، وبعدها القائمة الرئيسية.
-3.  المستخدم بختار العملية:
-    -   `A` لإضافة طالب.
-    -   `B` لتعديل علامة طالب.
-    -   `C` لعرض التقارير.
-    -   `D` للخروج.
-4.  `main.py` بستدعي الدالة المناسبة من `screens.py`.
-5.  عند الحاجة لإنشاء كائن طالب، الكود بستخدم `Student` class الموجودة
-    في `students.py`.
-6.  بيانات الطلاب بتنقرأ أو بتنكتب في `students.txt`.
-7.  بعد انتهاء العملية، المستخدم برجع للقائمة الرئيسية، إلا إذا اختار
-    الخروج.
+## Data Storage
 
-## الوظائف الرئيسية
+`students.txt` is a headerless comma-separated text file with one student per line and fields in this order:
 
-### 1. إضافة طالب -- Add Student
-
--   المستخدم بدخل Student ID والاسم.
--   النظام بتأكد إن رقم الطالب عدد صحيح وغير مكرر.
--   بتتم مراجعة الاسم للتأكد إنه مش فارغ ومكوّن من أحرف ومسافات.
--   إذا البيانات صحيحة، بتم إنشاء كائن `Student` وحفظه في
-    `students.txt`.
--   العلامات بتبدأ بقيمة `None` لأنها لسه ما انضافت.
-
-بعد الإضافة، المستخدم بقدر يضيف طالب ثاني أو يرجع للقائمة الرئيسية.
-
-### 2. تعديل طالب -- Modify Student
-
--   المستخدم بختار العلامة اللي بده يعدّلها: Midterm أو Participation أو
-    Final.
--   بدخل Student ID.
--   النظام بدوّر على الطالب في `students.txt`.
--   إذا الطالب موجود، بطلب العلامة الجديدة وبتأكد إنها ضمن النطاق
-    المسموح:
-    -   Midterm: من 0 إلى 30.
-    -   Participation: من 0 إلى 20.
-    -   Final: من 0 إلى 50.
--   بعد التعديل، `update_student_in_file()` بتحدّث سجل الطالب في الملف.
-
-التعديل الحالي بغيّر علامة واحدة في كل عملية.
-
-### 3. التقارير -- Reports
-
-قائمة التقارير بتوفر: - عرض جميع الطلاب. - عرض بيانات طالب محدد باستخدام
-Student ID. - عرض المجموع النهائي لكل طالب. - عرض أسماء الطلاب
-وأرقامهم. - حساب متوسط Midterm. - حساب متوسط Participation. - حساب متوسط
-Final. - حساب متوسط المجموع النهائي.
-
-التقارير بتستخدم Pandas لقراءة `students.txt` وتحويل البيانات إلى
-DataFrame. Pandas مستخدمة للتقارير فقط؛ أما الإضافة والتعديل فبتتعامل
-مباشرة مع الملف النصي.
-
-إذا علامة الطالب لسه `None`، بتتعامل معها Pandas كقيمة مفقودة. المتوسط
-بيتحسب من العلامات المتوفرة، أما المجموع النهائي للطالب فما بظهر كرقم
-إلا إذا كانت العلامات الثلاث كلها موجودة.
-
-## تخزين البيانات
-
-ملف `students.txt` هو مصدر البيانات الأساسي للمشروع. كل سطر بيمثل طالب
-واحد، والحقول مفصولة بفواصل وبالترتيب التالي:
-
-``` text
+```text
 Student_ID,Name,Midterm,Participation,Final
 ```
 
-مثال:
+The line above describes the field order; it is not a literal header row. For example, a record has the form `1234,Student Name,25.0,None,None`.
 
-``` text
-1001,Ahmad Ali,25,18,42
-1002,Sara Omar,None,None,None
-1003,Khaled Sami,28,19,45
-```
+`None` represents a score that has not been entered. Student creation, lookup, modification, and deletion use text-file handling in `screens.py` and `students.py`. Reports load the file with Pandas, interpret `None` as a missing value, and display missing values as `N/A`. The file is created automatically when the program starts if it is missing.
 
--   `Student_ID`: رقم الطالب.
--   `Name`: اسم الطالب.
--   `Midterm`: علامة الامتحان النصفي.
--   `Participation`: علامة المشاركة.
--   `Final`: علامة الامتحان النهائي.
--   `None`: معناها إن العلامة لسه مش مدخلة.
+## Reports
 
-**مهم:** لا تغيّر ترتيب الحقول أو طريقة الفصل بينها بدون تعديل دوال
-القراءة والكتابة في المشروع. وخلي نسخة احتياطية من `students.txt` قبل أي
-تعديل يدوي على بياناته.
+From the Reports menu, the program provides:
 
-## ملاحظات للمطوّر
+- All student records.
+- One student's record by ID.
+- Student IDs, names, and total scores (the total is available only when all three scores are present).
+- IDs and names for all students.
+- Average Midterm, Participation, and Final scores.
+- Average total score, using students who have all three scores.
 
--   ابدأ تتبّع تنفيذ البرنامج من `main.py`.
--   منطق القوائم والإدخال والتقارير موجود في `screens.py`.
--   تعريف الطالب وتحديث سجله في الملف موجودان في `students.py`.
--   أي تغيير على شكل سجل الطالب داخل `students.txt` لازم يراعي طريقتَي
-    القراءة والكتابة، خصوصاً `load_students_data()`
-    و`update_student_in_file()`.
--   إذا أضفت مكتبة جديدة، ثبّتها في بيئة التشغيل المستخدمة. حالياً
-    `pandas` هي المكتبة الخارجية المطلوبة للتقارير.
+Pandas reads and converts report data. Per-score averages use the available numeric values; missing scores are skipped. Averages are shown to two decimal places, or as `N/A` when no value is available.
 
-## حدود النسخة الحالية
+## Git and Local Data
 
-النسخة الحالية بتدعم الإضافة والتعديل وعرض التقارير. حذف سجل طالب
-(Delete Student) مش موجود ضمن الوظائف الحالية، وممكن إضافته في إصدار
-لاحق.
+`students.txt` is intended to remain local to each user's working copy. The `.gitignore` file contains a `students.txt` rule, and the file is currently ignored and untracked in this repository. The ignore rule prevents Git from adding the local data file; it does not remove a copy that was already tracked in another repository history.
 
-------------------------------------------------------------------------
+## Notebook Status
 
-**SLMS -- Student Learning Management System**\
-Developed by Zaid Shatat
+`main.ipynb` contains an older Colab workflow with a hard-coded Drive path and an outdated menu dispatch. It does not currently include the `main.py` startup initialization or Delete Student flow. Use `python main.py` for the current application behavior.
