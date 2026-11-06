@@ -14,3 +14,6 @@ venv/
 
 # Local student data
 students.txt
+
+# Arabic project documentation
+README_AR.md

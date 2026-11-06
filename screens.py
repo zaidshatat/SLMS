@@ -40,7 +40,12 @@ def _new_id_check():
     while True: # check if the student ID is unique and valid
         error_message = "Invalid input. Please enter a valid student ID."
         try:
-            student_id = int(input("\nEnter student ID: "))
+            raw_student_id = input("\nEnter student ID: ").strip()
+            if len(raw_student_id) != 5 or not raw_student_id.isascii() or not raw_student_id.isdecimal():
+                raise ValueError
+            student_id = int(raw_student_id)
+            if student_id < 10000 or student_id > 99999:
+                raise ValueError
             with open("students.txt", "r") as file:
                 for line in file:
                     existing_id = int(line.split(",")[0])
@@ -118,12 +123,29 @@ def _get_student_by_id(student_id):
         else:
             return None
 
+def _student_id_from_input(raw_student_id):
+    if not raw_student_id.isascii() or not raw_student_id.isdecimal():
+        return None
+    if len(raw_student_id) > 5:
+        return None
+    student_id = int(raw_student_id)
+    if len(raw_student_id) == 5:
+        return student_id if 10000 <= student_id <= 99999 else None
+    if str(student_id) == raw_student_id:
+        student = _get_student_by_id(student_id)
+        if student is not None:
+            return student_id
+    return None
+
 
 def modify_student_info():
     # Find the student once; reuse this object for each requested attribute change.
     while True:
         try:
-            student_id = int(input("Enter student ID to modify: "))
+            raw_student_id = input("Enter student ID to modify: ").strip()
+            student_id = _student_id_from_input(raw_student_id)
+            if student_id is None:
+                raise ValueError
             student = _get_student_by_id(student_id)
 
             if student is None:
@@ -196,7 +218,10 @@ def delete_student_info():
     # Validate the ID, show the matching record, and require confirmation before deletion.
     while True:
         try:
-            student_id = int(input("Enter student ID to delete: "))
+            raw_student_id = input("Enter student ID to delete: ").strip()
+            student_id = _student_id_from_input(raw_student_id)
+            if student_id is None:
+                raise ValueError
             break
         except ValueError:
             print("Invalid input. Please enter a valid student ID.")
@@ -328,11 +353,11 @@ def show_individual_student():
         return
     while True:
         raw_id = input('Enter Student ID: ').strip()
-        try:
-            student_id = int(raw_id)
-            break
-        except ValueError:
+        student_id = _student_id_from_input(raw_id)
+        if student_id is None:
             print('Invalid input. Please enter a valid Student ID.')
+            continue
+        break
     student = data[data['Student_ID'] == student_id]
     if student.empty:
         print(f'Student ID {student_id} not found.')

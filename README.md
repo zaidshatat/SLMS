@@ -73,7 +73,7 @@ The program displays developer information, waits for a keypress, and then repea
 
 ### Add a Student
 
-Enter a unique integer student ID and a non-empty name containing letters and spaces. The new record is appended with all three scores set to `None`. The Add flow can be repeated for more students.
+Enter a unique five-digit integer student ID from `10000` to `99999` and a non-empty name containing letters and spaces. The ID must not already be in use. Existing legacy records with shorter IDs remain available for lookup, modification, and deletion, but new students must use the five-digit format. The new record is appended with all three scores set to `None`. The Add flow can be repeated for more students.
 
 ### Modify a Student
 
