@@ -2,10 +2,6 @@ import screens as sc
 
 # Run the startup screens, then keep routing menu choices until the user exits.
 def main():
-    # Create the local data file if needed without changing existing contents.
-    with open("students.txt", "a"):
-        pass
-
     # Show developer details before opening the main menu.
     sc.show_developer_info()
     input("\nplease press any key to continue...")
