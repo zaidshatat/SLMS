@@ -8,6 +8,15 @@ from rich.table import Table
 
 console = Console()
 
+
+def _show_menu(title, options):
+    table = Table(title=title, box=box.ROUNDED, border_style="blue", header_style="bold")
+    table.add_column("Option", style="bold cyan", justify="center", no_wrap=True)
+    table.add_column("Description")
+    for letter, description in options:
+        table.add_row(letter, description)
+    console.print(table)
+
 # Store the developer details displayed at startup.
 info = {
     "name": "Zaid Shatat",
@@ -24,16 +33,18 @@ def show_developer_info():
 
 def display_main_menu():
     # Present the available top-level actions.
-    print(f"Please select an option from the menu below:\n")
-    print("A. Add a new student (press A)")
-    print("B. Modify a student (press B)")
-    print("C. Show reports (press C)")
-    print("D. Delete a student (press D)")
-    print("E. Exit the program (press E)")
+    _show_menu("Main Menu", [
+        ("A", "Add a new student (press A)"),
+        ("B", "Modify a student (press B)"),
+        ("C", "Show reports (press C)"),
+        ("D", "Delete a student (press D)"),
+        ("E", "Exit the program (press E)"),
+    ])
 
 
 def get_bin_choice(message):
     while True:
+        _show_menu("Choose an option", [("Y", "Yes"), ("N", "No")])
         choice = input(f"\n{message}").strip().upper()
         if choice not in ['Y', 'YES', 'N', 'NO']:
             print("Invalid choice. Please try again.")
@@ -57,7 +68,7 @@ def _name_check(message):
         if (len(name.split()) != 1) or (not name) or not name.isalpha():
             print("Name cannot be empty or digits or more than one syllable. Please try again.")
             continue
-        return name
+        return name.capitalize()
 
 def add_student():
     while True:
@@ -130,12 +141,13 @@ def add_student():
 def get_modify_choice():
     # Validate the attribute choice before returning it to the edit flow.
     while True:
-        print("\nWhat would you like to modify?")
-        print("A. Midterm")
-        print("B. Participation")
-        print("C. Final")
-        print("D. Name")
-        print("E. Exit to main menu")
+        _show_menu("What would you like to modify?", [
+            ("A", "Midterm"),
+            ("B", "Participation"),
+            ("C", "Final"),
+            ("D", "Name"),
+            ("E", "Exit to main menu"),
+        ])
         
         choice = input("Enter your choice: ").strip().upper()
 
@@ -244,7 +256,14 @@ def modify_student_info():
             # Use the fixed query selected by the menu mapping; input remains parameterized.
             values = (value, student.student_id)
             description = label
+        """
+cur.execute(query, values)
+                if cur.rowcount != 1:
+                    conn.rollback()
+                    print("The student record was not updated because it could not be found.")
+                    return
 
+"""
         conn = create_connection()
         if conn is None:
             print("The update could not be completed because the database connection failed.")
@@ -336,285 +355,248 @@ def delete_student_info():
 
 
 def _get_report_choice():
-    """Return one of the complete report menu choices."""
     while True:
-        console.print("\n[bold cyan]Student Reports[/bold cyan]")
-        console.print("A. All Students       B. Individual Student       C. Total Scores")
-        console.print("D. Names & IDs         E. Average Midterm           F. Average Participation")
-        console.print("G. Average Final       H. Average Total             I. Return to Main Menu")
-        console.print("J. Assessment Reports K. Score Sorting & Filters")
+        _show_menu("Student Reports", [
+            ("A", "All Students"),
+            ("B", "Individual Student"),
+            ("C", "Total Scores"),
+            ("D", "Names & IDs"),
+            ("E", "Average Midterm"),
+            ("F", "Average Participation"),
+            ("G", "Average Final"),
+            ("H", "Average Total"),
+            ("I", "Return to Main Menu"),
+            ("J", "Assessment Reports"),
+            ("K", "Score Sorting & Filters"),
+        ])
         choice = input("Enter your choice: ").strip().upper()
         if choice in tuple("ABCDEFGHIJK"):
             return choice
-        console.print("[yellow]Invalid choice. Select A through K.[/yellow]")
+        print("Invalid choice. Select A through K.")
 
 
-def _get_students_for_report():
-    """Load all report rows from PostgreSQL, or return False on failure."""
+def _show_all_students():
     conn = create_connection()
     if conn is None:
-        return False
+        return None
     try:
         with conn.cursor() as cur:
-            cur.execute(
-                """SELECT id, first_name, last_name, midterm, participation, final
-                   FROM students ORDER BY id"""
-            )
+            cur.execute("SELECT id, first_name, last_name, midterm, participation, final FROM students ORDER BY id")
             return cur.fetchall()
     except psycopg.Error as e:
-        console.print(f"[bold red]Could not load student reports:[/bold red] {e}")
-        return False
+        print(f"Could not retrieve student information: {e}")
+        return None
     finally:
         conn.close()
 
 
-def _format_mark(value):
-    return "N/A" if value is None else str(value)
-
-
-def _student_total(marks):
-    """Return a total only when all three marks are present."""
-    if any(mark is None for mark in marks):
-        return None
-    return sum(marks)
-
-
-def _average(values):
-    """Average present values, matching PostgreSQL AVG's NULL handling."""
-    present_values = [value for value in values if value is not None]
-    return sum(present_values) / len(present_values) if present_values else None
-
-
-def _show_student_table(rows):
-    """Display the student list and summary statistics from database rows."""
-    if not rows:
-        console.print(Panel("No student records found.", title="Student Report", border_style="yellow"))
+def _show_all_students_report():
+    students = _show_all_students()
+    if students is None:
         return
-
-    table = Table(
-        title="Student Gradebook",
-        box=box.SIMPLE_HEAVY,
-        header_style="bold cyan",
-        border_style="bright_blue",
-        row_styles=["", "dim"],
-        expand=True,
-        pad_edge=False,
-    )
-    table.add_column("ID", justify="right", style="bold white", no_wrap=True)
-    table.add_column("First Name", style="white", overflow="ellipsis", max_width=20)
-    table.add_column("Last Name", style="white", overflow="ellipsis", max_width=20)
-    table.add_column("Midterm\n(30)", justify="right")
-    table.add_column("Participation\n(30)", justify="right")
-    table.add_column("Final\n(40)", justify="right")
-    table.add_column("Total\n(100)", justify="right", style="bold green")
-
-    for student_id, first_name, last_name, midterm, participation, final in rows:
-        total = _student_total((midterm, participation, final))
-        total_style = "green" if total is not None and total >= 85 else "yellow" if total is not None and total >= 60 else "red"
-        table.add_row(
-            str(student_id), first_name, last_name,
-            _format_mark(midterm), _format_mark(participation), _format_mark(final),
-            f"[{total_style}]{_format_mark(total)}[/]",
-        )
-
-    count = len(rows)
-    averages = [_average([row[index] for row in rows]) for index in (3, 4, 5)]
-    average_total = _average([
-        _student_total((row[3], row[4], row[5])) for row in rows
-    ])
-    stats = Table.grid(expand=True, padding=(0, 2))
-    stats.add_column(justify="center")
-    stats.add_column(justify="center")
-    stats.add_column(justify="center")
-    stats.add_column(justify="center")
-    stats.add_column(justify="center")
-    stats.add_row(
-        f"[bold white]{count}[/]\n[dim]Students[/]",
-        f"[bold cyan]{_format_mark(averages[0]) if averages[0] is None else f'{averages[0]:.2f}'}[/]\n[dim]Midterm / 30[/]",
-        f"[bold cyan]{_format_mark(averages[1]) if averages[1] is None else f'{averages[1]:.2f}'}[/]\n[dim]Participation / 30[/]",
-        f"[bold cyan]{_format_mark(averages[2]) if averages[2] is None else f'{averages[2]:.2f}'}[/]\n[dim]Final / 40[/]",
-        f"[bold green]{_format_mark(average_total) if average_total is None else f'{average_total:.2f}'}[/]\n[dim]Average total / 100[/]",
-    )
-    console.print(Panel(stats, title="Class Summary", border_style="bold cyan", box=box.ROUNDED, padding=(1, 0)))
-    console.print(table)
-
-
-def _show_score_report(rows, title, score_column, maximum, order=None):
-    """Render a score-focused table from the shared PostgreSQL result set."""
-    if not rows:
-        console.print(Panel("No students match this report.", title=title, border_style="yellow"))
+    if not students:
+        print("No students found.")
         return
-    score_index = {"midterm": 3, "participation": 4, "final": 5, "total": None}[score_column]
-    report_rows = []
-    for row in rows:
-        score = _student_total(row[3:6]) if score_column == "total" else row[score_index]
-        report_rows.append((row[0], row[1], row[2], score))
-    if order:
-        scored_rows = [item for item in report_rows if item[3] is not None]
-        missing_rows = [item for item in report_rows if item[3] is None]
-        scored_rows.sort(key=lambda item: item[3], reverse=(order == "descending"))
-        report_rows = scored_rows + missing_rows
-
-    table = Table(title=title, box=box.SIMPLE_HEAVY, header_style="bold cyan", border_style="bright_blue", expand=True)
-    table.add_column("Student ID", justify="right", no_wrap=True)
-    table.add_column("First Name", overflow="ellipsis", max_width=22)
-    table.add_column("Last Name", overflow="ellipsis", max_width=22)
-    table.add_column(f"{score_column.title()} / {maximum}", justify="right", style="bold green")
-    for student_id, first_name, last_name, score in report_rows:
-        shown = _format_mark(score)
-        style = "green" if score is not None and score >= maximum * .8 else "yellow" if score is not None and score >= maximum * .5 else "red"
-        table.add_row(str(student_id), first_name, last_name, f"[{style}]{shown}[/]")
+    table = Table(title="All Students")
+    table.add_column("ID")
+    table.add_column("First Name")
+    table.add_column("Last Name")
+    table.add_column("Midterm")
+    table.add_column("Participation")
+    table.add_column("Final")
+    for student in students:
+        table.add_row(*[str(value) for value in student])
     console.print(table)
-
-
-def _choose_mark():
-    """Ask which individual mark should be analyzed."""
-    choices = {"A": ("midterm", 3, 30), "B": ("participation", 4, 30), "C": ("final", 5, 40)}
-    while True:
-        console.print("Select mark: A. Midterm  B. Participation  C. Final")
-        choice = input("Enter choice: ").strip().upper()
-        if choice in choices:
-            return choices[choice]
-        console.print("[yellow]Choose A, B, or C.[/yellow]")
-
-
-def _show_assessment_reports(rows):
-    while True:
-        console.print("\n[bold cyan]Assessment Reports[/bold cyan]")
-        console.print("A. Midterm  B. Participation  C. Final  D. Back")
-        choice = input("Enter choice: ").strip().upper()
-        if choice == "D":
-            return
-        spec = {"A": ("midterm", 30), "B": ("participation", 30), "C": ("final", 40)}
-        if choice not in spec:
-            console.print("[yellow]Choose A, B, C, or D.[/yellow]")
-            continue
-        mark, maximum = spec[choice]
-        _show_score_report(rows, f"{mark.title()} Report", mark, maximum)
-
-
-def _show_score_analysis(rows):
-    while True:
-        console.print("\n[bold cyan]Score Analysis[/bold cyan]")
-        console.print("A. Total: descending  B. Total: ascending")
-        console.print("C. Mark: descending   D. Mark: ascending")
-        console.print("E. Highest and lowest mark  F. Filter mark range  G. Back")
-        choice = input("Enter choice: ").strip().upper()
-        if choice == "G":
-            return
-        if choice in ("A", "B"):
-            _show_score_report(rows, "Students Sorted by Total", "total", 100, "descending" if choice == "A" else "ascending")
-            continue
-        if choice not in ("C", "D", "E", "F"):
-            console.print("[yellow]Choose A through G.[/yellow]")
-            continue
-        mark, index, maximum = _choose_mark()
-        if choice in ("C", "D"):
-            _show_score_report(rows, f"{mark.title()} Scores ({choice.lower()} order)", mark, maximum, "descending" if choice == "C" else "ascending")
-        elif choice == "E":
-            valid_rows = [row for row in rows if row[index] is not None]
-            if not valid_rows:
-                console.print(Panel("No recorded scores for this mark.", title=mark.title(), border_style="yellow"))
-            else:
-                low, high = min(row[index] for row in valid_rows), max(row[index] for row in valid_rows)
-                _show_score_report([row for row in valid_rows if row[index] in (low, high)], f"Lowest and Highest {mark.title()} Scores", mark, maximum)
-        else:
-            while True:
-                try:
-                    low = int(input(f"Minimum {mark} score (0-{maximum}): ").strip())
-                    high = int(input(f"Maximum {mark} score (0-{maximum}): ").strip())
-                    if 0 <= low <= high <= maximum:
-                        break
-                except ValueError:
-                    pass
-                console.print(f"[yellow]Enter integer bounds from 0 to {maximum}, with minimum no greater than maximum.[/yellow]")
-            filtered = [row for row in rows if row[index] is not None and low <= row[index] <= high]
-            _show_score_report(filtered, f"{mark.title()} Scores: {low}–{high}", mark, maximum)
 
 
 def _show_individual_student_report():
-    """Ask for an ID and display the student's PostgreSQL record."""
     while True:
         student_id = _student_id_from_input(input("Enter student ID: "))
-        if student_id is not None:
-            break
-        console.print("[yellow]Enter a valid positive integer ID.[/yellow]")
-
-    while True:
+        if student_id is None:
+            print("Invalid student ID. Enter a positive whole number.")
+            continue
         student = _get_student_by_id(student_id)
         if student is False:
-            console.print("[bold red]Database error prevented loading the student report.[/bold red]")
             return
         if student is None:
-            console.print(f"[yellow]Student ID {student_id} was not found.[/yellow]")
-            if get_bin_choice("Would you like to try another ID? (Y/N): ") in ('Y', 'YES'):
-                while True:
-                    student_id = _student_id_from_input(input("Enter student ID: "))
-                    if student_id is not None:
-                        break
-                    console.print("[yellow]Enter a valid positive integer ID.[/yellow]")
-                continue
-            return
-        break
+            print("Student ID not found.")
+            if get_bin_choice("Would you like to try another ID? (Y/N): ") in ('N', 'NO'):
+                return
+            continue
 
-    marks = (student.midterm, student.participation, student.final)
-    total = _student_total(marks)
-    details = Table(box=box.SIMPLE, show_header=False, padding=(0, 1), expand=True)
-    details.add_column(style="bold cyan", width=20)
-    details.add_column(style="white")
-    details.add_row("Student ID", str(student.student_id))
-    details.add_row("First name", student.first_name)
-    details.add_row("Last name", student.last_name)
-    details.add_row("Midterm", f"{_format_mark(student.midterm)} / 30")
-    details.add_row("Participation", f"{_format_mark(student.participation)} / 30")
-    details.add_row("Final", f"{_format_mark(student.final)} / 40")
-    total_value = _format_mark(total) if total is None else f"{total} / 100"
-    details.add_row("Total", f"[bold green]{total_value}[/bold green]")
-    console.print(Panel(details, title="Individual Student Report", border_style="bright_blue", box=box.ROUNDED, padding=(1, 2)))
+        table = Table(title="Individual Student")
+        table.add_column("ID")
+        table.add_column("Name")
+        table.add_column("Midterm")
+        table.add_column("Participation")
+        table.add_column("Final")
+
+        table.add_row(str(student.student_id),
+                      f"{student.first_name} {student.last_name}",
+                      str(student.midterm),
+                      str(student.participation),
+                      str(student.final))
+        console.print(table)
+        return
+
+
+def _show_total_scores_report():
+    students = _show_all_students()
+    if students is None:
+        return
+    table = Table(title="Total Scores")
+    table.add_column("ID")
+    table.add_column("Name")
+    table.add_column("Total")
+    for row in students:
+        table.add_row(str(row[0]), f"{row[1]} {row[2]}", str(sum(row[3:6])))
+    console.print(table)
+
+
+def _show_names_and_ids_report():
+    students = _show_all_students()
+    if students is None:
+        return
+    table = Table(title="Student Names and IDs")
+    table.add_column("ID")
+    table.add_column("Name")
+    for row in students:
+        table.add_row(str(row[0]), f"{row[1]} {row[2]}")
+    console.print(table)
+
+
+def _show_average_report(column, title):
+    conn = create_connection()
+    if conn is None:
+        return
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT AVG({column}) FROM students")
+            average = cur.fetchone()[0]
+        if average is None:
+            print(f"No scores available for {title}.")
+        else:
+            table = Table(title=f"{title} AVG")
+            table.add_column(f"{column}_avg")
+            table.add_row(str(round(average, 2)))
+            console.print(table)
+    except psycopg.Error as e:
+        print(f"Could not retrieve average score: {e}")
+    finally:
+        conn.close()
+
+
+def _show_average_total_report():
+    students = _show_all_students()
+    if students is None:
+        return
+    totals = [sum(row[3:6]) for row in students]
+    if totals:
+        print(f"Average Total: {sum(totals) / len(totals):.2f}")
+    else:
+        print("No total scores available.")
+
+
+def _show_assessment_reports():
+    _show_menu("Choose assessment", [
+        ("A", "Midterm"),
+        ("B", "Participation"),
+        ("C", "Final"),
+    ])
+    choice = input("Choose assessment: ").strip().upper()
+    assessments = {'A': ('midterm', 'Midterm'), 'B': ('participation', 'Participation'), 'C': ('final', 'Final')}
+    if choice not in assessments:
+        print("Invalid assessment choice.")
+        return
+    column, title = assessments[choice]
+    students = _show_all_students()
+    if students is None:
+        return
+    table = Table(title=f"{title} Scores")
+    table.add_column("ID")
+    table.add_column("Name")
+    table.add_column(f"{column}_score")
+    index = {'midterm': 3, 'participation': 4, 'final': 5}[column]
+    for row in students:
+        table.add_row(str(row[0]), f"{row[1]} {row[2]}", str(row[index]))
+    console.print(table)
+
+
+def _show_score_sorting_and_filters():
+    _show_menu("Score Sorting & Filters", [
+        ("A", "Sort total scores"),
+        ("B", "Filter an assessment score"),
+    ])
+    choice = input("Enter your choice: ").strip().upper()
+    students = _show_all_students()
+    if students is None:
+        return
+    if choice == 'A':
+        students.sort(key=lambda row: sum(row[3:6]), reverse=True)
+        table = Table(title="Students Sorted by Total")
+        table.add_column("ID")
+        table.add_column("Name")
+        table.add_column("Total")
+        for row in students:
+            table.add_row(str(row[0]), f"{row[1]} {row[2]}", str(sum(row[3:6])))
+        console.print(table)
+    elif choice == 'B':
+        _show_menu("Choose assessment", [
+            ("A", "Midterm"),
+            ("B", "Participation"),
+            ("C", "Final"),
+        ])
+        assessment = input("Choose assessment: ").strip().upper()
+        assessments = {'A': ('Midterm', 3, 30), 'B': ('Participation', 4, 30), 'C': ('Final', 5, 40)}
+        if assessment not in assessments:
+            print("Invalid assessment choice.")
+            return
+        name, index, maximum = assessments[assessment]
+        try:
+            low = int(input(f"Minimum {name} score (0-{maximum}): "))
+            high = int(input(f"Maximum {name} score (0-{maximum}): "))
+        except ValueError:
+            print("Enter whole numbers for the score range.")
+            return
+        if low < 0 or high > maximum or low > high:
+            print("Invalid score range.")
+            return
+        table = Table(title=f"{name} Scores from {low} to {high}")
+        table.add_column("ID")
+        table.add_column("Name")
+        table.add_column("Score")
+        for row in students:
+            if low <= row[index] <= high:
+                table.add_row(str(row[0]), f"{row[1]} {row[2]}", str(row[index]))
+        console.print(table)
+    else:
+        print("Invalid choice.")
 
 
 def show_reports_screen():
-    """Route report menu choices to PostgreSQL-backed reports."""
     while True:
         choice = _get_report_choice()
-        if choice == 'I':
-            console.print("Returning to main menu.")
-            return
-        if choice == 'A':
-            rows = _get_students_for_report()
-            if rows is not False:
-                _show_student_table(rows)
-        elif choice == 'B':
-            _show_individual_student_report()
-        elif choice in ('C', 'D', 'E', 'F', 'G', 'H', 'J', 'K'):
-            rows = _get_students_for_report()
-            if rows is False:
-                continue
-            if choice == 'C':
-                _show_score_report(rows, "Students' Total Scores", "total", 100)
-            elif choice == 'D':
-                table = Table(title="Student Names & IDs", box=box.SIMPLE_HEAVY, header_style="bold cyan", expand=True)
-                table.add_column("Student ID", justify="right")
-                table.add_column("First Name")
-                table.add_column("Last Name")
-                if rows:
-                    for row in rows:
-                        table.add_row(str(row[0]), row[1], row[2])
-                    console.print(table)
-                else:
-                    console.print(Panel("No student records found.", title="Names & IDs", border_style="yellow"))
-            elif choice in ('E', 'F', 'G', 'H'):
-                mark = {'E': ('midterm', 3, 30), 'F': ('participation', 4, 30), 'G': ('final', 5, 40), 'H': ('total', None, 100)}[choice]
-                name, index, maximum = mark
-                values = [_student_total(row[3:6]) if name == 'total' else row[index] for row in rows]
-                average = _average(values)
-                label = f"Average {name.title()}"
-                result = _format_mark(average) if average is None else f"{average:.2f} / {maximum}"
-                console.print(Panel(f"[bold cyan]{result}[/bold cyan]", title=label, border_style="cyan", box=box.ROUNDED))
-            elif choice == 'J':
-                _show_assessment_reports(rows)
-            else:
-                _show_score_analysis(rows)
-        else:
-            console.print("Returning to main menu.")
-            return
+        match choice:
+            case 'A':
+                _show_all_students_report()
+            case 'B':
+                _show_individual_student_report()
+            case 'C':
+                _show_total_scores_report()
+            case 'D':
+                _show_names_and_ids_report()
+            case 'E':
+                _show_average_report("midterm", "Midterm")
+            case 'F':
+                _show_average_report("participation", "Participation")
+            case 'G':
+                _show_average_report("final", "Final")
+            case 'H':
+                _show_average_total_report()
+            case 'I':
+                print("Returning to main menu.")
+                return
+            case 'J':
+                _show_assessment_reports()
+            case 'K':
+                _show_score_sorting_and_filters()

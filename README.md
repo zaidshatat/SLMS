@@ -33,13 +33,13 @@ CREATE TABLE IF NOT EXISTS students (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
-    midterm INTEGER DEFAULT 0 CHECK (midterm BETWEEN 0 AND 30),
-    participation INTEGER DEFAULT 0 CHECK (participation BETWEEN 0 AND 30),
-    final INTEGER DEFAULT 0 CHECK (final BETWEEN 0 AND 40)
+    midterm INTEGER NOT NULL DEFAULT 0 CHECK (midterm BETWEEN 0 AND 30),
+    participation INTEGER NOT NULL DEFAULT 0 CHECK (participation BETWEEN 0 AND 30),
+    final INTEGER NOT NULL DEFAULT 0 CHECK (final BETWEEN 0 AND 40)
 );
 ```
 
-The three mark columns have defaults and range checks, and remain nullable because the schema does not declare them `NOT NULL`. The default `0` applies when a column is omitted from an insert; an explicit SQL `NULL` remains `NULL`.
+The three mark columns are required, default to `0`, and must stay within their allowed ranges. On startup, `database.py` converts any existing `NULL` marks to `0` and then enforces `NOT NULL` on all three columns.
 
 ## Setup
 
