@@ -33,22 +33,5 @@ if conn:
             );
         """)
 
-        # Repair existing rows before enforcing the same rule on the table.
-        cur.execute("""
-            UPDATE students
-            SET midterm = COALESCE(midterm, 0),
-                participation = COALESCE(participation, 0),
-                final = COALESCE(final, 0)
-            WHERE midterm IS NULL OR participation IS NULL OR final IS NULL;
-        """)
-        cur.execute("""
-            ALTER TABLE students
-                ALTER COLUMN midterm SET DEFAULT 0,
-                ALTER COLUMN midterm SET NOT NULL,
-                ALTER COLUMN participation SET DEFAULT 0,
-                ALTER COLUMN participation SET NOT NULL,
-                ALTER COLUMN final SET DEFAULT 0,
-                ALTER COLUMN final SET NOT NULL;
-        """)
     conn.commit()
     conn.close()
